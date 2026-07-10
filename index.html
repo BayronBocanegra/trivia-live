@@ -18,9 +18,12 @@
   <style>
     /* CSS RESET & GENERAL VARIABLES */
     :root {
-      --color-primary: #da291c; /* Claro Red */
+      --color-primary: #da291c; /* Acento / Realces */
       --color-accent: #ffffff;
       --color-bg: #0b0b0b;
+      --color-btn: #da291c;      /* Relleno de botones */
+      --color-btn-text: #ffffff; /* Texto encima de los botones */
+      --color-text: #ffffff;     /* Letra principal (preguntas/textos) */
       --color-dark: #121212;
       --gold-primary: #d4af37;
       --gold-secondary: #f39c12;
@@ -44,7 +47,7 @@
       overflow: hidden;
       font-family: 'Inter', sans-serif;
       background-color: var(--color-bg);
-      color: #ffffff;
+      color: var(--color-text);
       touch-action: manipulation;
     }
 
@@ -136,8 +139,8 @@
       font-size: 1.1rem;
       font-weight: 700;
       text-transform: uppercase;
-      color: #ffffff;
-      background: linear-gradient(135deg, var(--color-primary) 0%, #a81c13 100%);
+      color: var(--color-btn-text);
+      background: linear-gradient(135deg, var(--color-btn) 0%, color-mix(in srgb, var(--color-btn) 65%, #000) 100%);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 50px;
       cursor: pointer;
@@ -549,7 +552,7 @@
       font-size: 2.2rem;
       font-weight: 700;
       line-height: 1.3;
-      color: var(--color-accent);
+      color: var(--color-text);
     }
 
     .options-grid {
@@ -947,7 +950,42 @@
       display: flex;
       align-items: center;
       gap: 15px;
+      flex-wrap: wrap;
     }
+    .color-picker-container > div { text-align: center; }
+
+    /* IN-GAME RECONNECT QR (modo celular) */
+    .ingame-qr {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 500;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid var(--color-primary);
+      border-radius: 14px;
+      padding: 10px 12px 8px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+      max-width: 130px;
+    }
+    .ingame-qr.show { display: flex; }
+    .ingame-qr-label {
+      font-size: 0.68rem;
+      color: #fff;
+      opacity: 0.9;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.15;
+    }
+    .ingame-qr-room { font-size: 0.7rem; color: #fff; opacity: 0.7; }
+    .ingame-qr-room span { color: var(--color-primary); font-weight: 700; letter-spacing: 1px; }
+    #ingame-qrcode { background: #fff; padding: 5px; border-radius: 8px; line-height: 0; }
+    #ingame-qrcode img, #ingame-qrcode canvas { width: 96px !important; height: 96px !important; display: block; }
 
     .color-picker-container input[type="color"] {
       border: none;
@@ -1608,14 +1646,22 @@
               <input type="text" id="cfg-password" placeholder="Por defecto: 147">
             </div>
             <div class="config-field">
-              <label>Colores Corporativos</label>
+              <label>Colores del Juego</label>
               <div class="color-picker-container">
                 <div>
-                  <input type="color" id="cfg-color-primary">
-                  <span style="font-size:0.75rem; display:block;">Primario</span>
+                  <input type="color" id="cfg-color-btn">
+                  <span style="font-size:0.75rem; display:block;">Botones</span>
                 </div>
                 <div>
-                  <input type="color" id="cfg-color-accent">
+                  <input type="color" id="cfg-color-btn-text">
+                  <span style="font-size:0.75rem; display:block;">Texto botón</span>
+                </div>
+                <div>
+                  <input type="color" id="cfg-color-text">
+                  <span style="font-size:0.75rem; display:block;">Letra</span>
+                </div>
+                <div>
+                  <input type="color" id="cfg-color-primary">
                   <span style="font-size:0.75rem; display:block;">Acento</span>
                 </div>
                 <div>
@@ -1623,6 +1669,7 @@
                   <span style="font-size:0.75rem; display:block;">Fondo</span>
                 </div>
               </div>
+              <input type="color" id="cfg-color-accent" style="display:none;">
             </div>
           </div>
           <div class="config-row">
@@ -1824,13 +1871,175 @@
     </div>
   </div>
 
+  <!-- QR de reconexión visible durante el juego (modo celular) -->
+  <div id="ingame-qr" class="ingame-qr">
+    <div class="ingame-qr-label"><i class="fa-solid fa-mobile-screen-button"></i> ¿Se cerró?<br>Vuelve a escanear</div>
+    <div id="ingame-qrcode"></div>
+    <div class="ingame-qr-room">Sala <span id="ingame-qr-code">----</span></div>
+  </div>
+
   <script>
     /* BAKEABLE CONFIGURATION PATTERN */
   </script>
   <script type="application/json" id="bakedConfig">
-  {
-    "baked": false
+{
+  "baked": true,
+  "config": {
+    "title": "Trivia",
+    "subtitle": "Pon a prueba tus conocimientos",
+    "adminPassword": "147",
+    "colorPrimary": "#ffffff",
+    "colorAccent": "#ffffff",
+    "colorBg": "#0b0b0b",
+    "inactivityTimeout": 45,
+    "showRankingAtEnd": true,
+    "facil": {
+      "timeLimitPerQuestion": 20,
+      "pointsMultiplier": 1
+    },
+    "dificil": {
+      "timeLimitPerQuestion": 10,
+      "pointsMultiplier": 2
+    },
+    "questions": [
+      {
+        "text": "¿Cuál es el margen de ganancia garantizado para el tendero al vender Nutrión? ",
+        "options": [
+          "10%",
+          "20%",
+          "15%",
+          "25%"
+        ],
+        "correctIndex": 1,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "¿Qué fecha oficial marca el inicio de ventas de Nutrión en el Eje Cafetero?",
+        "options": [
+          "1 de Julio",
+          "30 de Julio",
+          "15 de Julio",
+          "17 de Marzo"
+        ],
+        "correctIndex": 2,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "En la categoría de perros en el Eje Cafetero, ¿cuál es el tamaño de SKU que representa la mayor porción del mercado con un 27%?",
+        "options": [
+          "GR 500",
+          "GR 1000",
+          "GR 800",
+          "GR 2000"
+        ],
+        "correctIndex": 2,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "¿Cuáles son las fuentes de proteína animal de alta calidad utilizadas en la fórmula de Nutrión Perros y Gatos?",
+        "options": [
+          "Pollo y Pescado",
+          "Carne y Cerdo",
+          "Pollo y Carne",
+          "Solo Carne"
+        ],
+        "correctIndex": 2,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "¿Cuál es el precio de venta sugerido al público para la presentación de Nutrión Perros de 500g?",
+        "options": [
+          "$3.500",
+          "$3.400",
+          "$5.300",
+          "$2.590"
+        ],
+        "correctIndex": 1,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "¿Nutrión Gatos Adultos es un alimento balanceado que cuenta con control de PH urinario?",
+        "options": [
+          "SI",
+          "NO",
+          "TODAS LAS ANTERIORES",
+          "NINGURA"
+        ],
+        "correctIndex": 0,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "Según el análisis de mercado del Eje Cafetero, ¿cuál es la marca líder absoluta en el segmento de Gatos con un 39% de participación a Junio 25?",
+        "options": [
+          "Whiskas",
+          "Mirringo",
+          "Donkat",
+          "Oh mai gat"
+        ],
+        "correctIndex": 2,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "¿Qué producto de la línea de snacks se ofrece bajo el sabor a salchicha y en presentación de 50g?",
+        "options": [
+          "Trocitos Nutrión",
+          "Nutrión Trocitos",
+          "Nu-Trocitos",
+          "Nutrión Snacks"
+        ],
+        "correctIndex": 2,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "¿Cuál es el precio de venta sugerido al público para la presentación de Nutrión Gatos de 500g?",
+        "options": [
+          "$5.47",
+          "$5.300",
+          " $5.000",
+          "$6.300"
+        ],
+        "correctIndex": 1,
+        "points": 100,
+        "penalty": 20
+      },
+      {
+        "text": "¿Cuál es el beneficio clave que se le debe argumentar al tendero si manifiesta la objeción: \"No tengo espacio\"?",
+        "options": [
+          "Que el producto viene en bultos grandes de 15 Kg.",
+          "Que se puede colgar del techo de la tienda.",
+          "Que las presentaciones son de 500g y 1000g, fáciles de acomodar y de alta rotación",
+          "Que no necesita exhibirse en estantería."
+        ],
+        "correctIndex": 2,
+        "points": 100,
+        "penalty": 20
+      }
+    ],
+    "colorButton": "#fcc410",
+    "colorButtonText": "#ffffff",
+    "colorText": "#ffffff",
+    "showQuestionsOnMobile": true
+  },
+  "assets": {
+    "logo": null,
+    "bgMenu": null,
+    "bgGameplay": null,
+    "musicMenu": null,
+    "musicGameplay": null,
+    "sfxCorrect": null,
+    "sfxIncorrect": null,
+    "sfxCountdown": null,
+    "sfxGameOver": null
   }
+}
   </script>
 
   <script>
@@ -1846,6 +2055,9 @@
       colorPrimary: "#da291c",
       colorAccent: "#ffffff",
       colorBg: "#0b0b0b",
+      colorButton: "#da291c",
+      colorButtonText: "#ffffff",
+      colorText: "#ffffff",
       inactivityTimeout: 45,
       showRankingAtEnd: true,
       showQuestionsOnMobile: true,
@@ -1990,11 +2202,13 @@
         const store = transaction.objectStore(STORE_NAME);
         
         for (const key of Object.keys(customAssets)) {
-          customAssets[key] = await new Promise((resolve) => {
+          const val = await new Promise((resolve) => {
             const req = store.get(key);
             req.onsuccess = () => resolve(req.result || null);
             req.onerror = () => resolve(null);
           });
+          // Solo sobreescribe si esta máquina tiene el asset guardado (no borra los horneados)
+          if (val !== null) customAssets[key] = val;
         }
         applyCustomAssets();
       } catch (err) {
@@ -2222,40 +2436,51 @@
     // 4. CONFIG MANAGEMENT (LOAD / APPLY / RESTORE)
     // ==========================================
     function loadConfig() {
-      // 1. Check for baked config in the script tag
+      // 1. Config horneada en el <script> = valores por defecto publicados
+      let bakedConfig = null, bakedAssets = null;
       const bakedElement = document.getElementById('bakedConfig');
       if (bakedElement) {
         try {
           const baked = JSON.parse(bakedElement.textContent);
           if (baked && baked.baked) {
-            console.log("Loading baked configuration data.");
-            config = baked.config;
-            customAssets = baked.assets;
-            applyCustomAssets();
-            return;
+            console.log("Config horneada encontrada (valores por defecto).");
+            bakedConfig = baked.config || null;
+            bakedAssets = baked.assets || null;
           }
         } catch(e) {
           console.error("Failed parsing baked config:", e);
         }
       }
 
-      // 2. Check localStorage config
+      // 2. Config: las ediciones locales (localStorage) tienen prioridad sobre lo horneado
       try {
         const savedConfig = localStorage.getItem('claro_trivia_config');
         if (savedConfig) {
           config = JSON.parse(savedConfig);
+        } else if (bakedConfig) {
+          config = bakedConfig;
         } else {
           config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
         }
       } catch(e) {
         console.error("Local storage read failure, defaulting.", e);
-        config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        config = bakedConfig || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       }
 
-      // 3. Check IndexedDB assets
+      // 3. Assets: arranca desde los horneados; lo guardado en esta máquina (IndexedDB) los sobreescribe
+      if (bakedAssets) {
+        for (const key of Object.keys(customAssets)) {
+          if (bakedAssets[key] !== undefined && bakedAssets[key] !== null) {
+            customAssets[key] = bakedAssets[key];
+          }
+        }
+      }
+      applyCustomAssets();
+
+      // 4. Assets locales (IndexedDB) sobreescriben lo horneado en la máquina de la pantalla
       loadAssetsFromDB();
-      
-      // 4. Load ranking
+
+      // 5. Load ranking
       loadRanking();
     }
 
@@ -2264,6 +2489,9 @@
       document.documentElement.style.setProperty('--color-primary', config.colorPrimary || '#da291c');
       document.documentElement.style.setProperty('--color-accent', config.colorAccent || '#ffffff');
       document.documentElement.style.setProperty('--color-bg', config.colorBg || '#0b0b0b');
+      document.documentElement.style.setProperty('--color-btn', config.colorButton || config.colorPrimary || '#da291c');
+      document.documentElement.style.setProperty('--color-btn-text', config.colorButtonText || '#ffffff');
+      document.documentElement.style.setProperty('--color-text', config.colorText || '#ffffff');
       
       // Apply Logo
       const logoSvgs = document.querySelectorAll('.default-svg-logo');
@@ -2412,6 +2640,53 @@
       }
     }
 
+    let ingameQrRenderedRoom = '';
+    function renderIngameQR() {
+      const cont = document.getElementById('ingame-qrcode');
+      if (!cont || !kioskRoomId) return;
+      const mobileUrl = buildMobileUrl(kioskRoomId);
+      cont.innerHTML = '';
+      try {
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(cont, {
+            text: mobileUrl,
+            width: 96,
+            height: 96,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } else {
+          const qrImg = document.createElement('img');
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent(mobileUrl)}`;
+          qrImg.style.width = "96px"; qrImg.style.height = "96px";
+          cont.appendChild(qrImg);
+        }
+      } catch(e) {
+        cont.innerHTML = '';
+        const qrImg = document.createElement('img');
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent(mobileUrl)}`;
+        qrImg.style.width = "96px"; qrImg.style.height = "96px";
+        cont.appendChild(qrImg);
+      }
+      const codeEl = document.getElementById('ingame-qr-code');
+      if (codeEl) codeEl.innerText = kioskRoomId.replace('CLARO-', '');
+      ingameQrRenderedRoom = kioskRoomId;
+    }
+
+    function updateIngameQR() {
+      const el = document.getElementById('ingame-qr');
+      if (!el) return;
+      const inGame = (gameState === 'COUNTDOWN' || gameState === 'PLAYING' || gameState === 'PAUSED');
+      const mobileHosting = (playInputSource === 'mobile') && !!kioskRoomId;
+      if (inGame && mobileHosting) {
+        if (ingameQrRenderedRoom !== kioskRoomId) renderIngameQR();
+        el.classList.add('show');
+      } else {
+        el.classList.remove('show');
+      }
+    }
+
     function sendRelay(obj) {
       if (kioskSocket && kioskSocket.readyState === 1) {
         kioskSocket.send(JSON.stringify(obj));
@@ -2472,11 +2747,8 @@
             break;
 
           case 'player_joined':
-            if (gameState === 'PLAYING' || gameState === 'COUNTDOWN' || gameState === 'PAUSED') {
-              sendRelay({ t: 'to_player', id: m.id, d: { type: 'rejected', reason: 'Partida activa' } });
-              setTimeout(() => sendRelay({ t: 'kick', id: m.id }), 500);
-              break;
-            }
+            // Se acepta la conexión en cualquier momento (permite reconexión a mitad de partida
+            // si a alguien se le cierra el juego en el celular).
             kioskConns[m.id] = makePlayerConn(m.id);
             console.log('Celular conectado:', m.id);
             break;
@@ -2509,15 +2781,43 @@
       };
     }
 
+    function currentQuestionPayload() {
+      const q = config.questions[currentQuestionIndex];
+      if (!q) return null;
+      return {
+        type: 'question',
+        qNum: currentQuestionIndex + 1,
+        qTotal: config.questions.length,
+        optionsCount: q.options.length,
+        text: config.showQuestionsOnMobile !== false ? q.text : null,
+        options: config.showQuestionsOnMobile !== false ? q.options : null
+      };
+    }
+
     function handleMobileData(conn, data) {
       if (!data) return;
-      
+
       switch(data.type) {
-        case 'register':
+        case 'register': {
           const name = data.name.trim().substring(0, 10).toUpperCase() || 'CELULAR';
           console.log('Registered player:', name, 'on peer:', conn.peer);
-          
+
+          const inActiveGame = (gameState === 'PLAYING' || gameState === 'COUNTDOWN' || gameState === 'PAUSED');
+
           let existingPlayer = players.find(p => p.id === conn.peer);
+
+          // Reconexión a mitad de partida: si el peer es nuevo pero ya existe un jugador
+          // con el mismo nombre que se había desconectado, se le vuelve a enlazar
+          // conservando su puntaje.
+          if (!existingPlayer && inActiveGame) {
+            existingPlayer = players.find(p => p.name === name && (!p.connection || !p.connection.open));
+            if (existingPlayer) {
+              existingPlayer.id = conn.peer;
+              existingPlayer.connection = conn;
+              console.log('Jugador reconectado:', name);
+            }
+          }
+
           if (!existingPlayer) {
             existingPlayer = {
               id: conn.peer,
@@ -2534,15 +2834,25 @@
             existingPlayer.name = name;
             existingPlayer.connection = conn;
           }
-          
+
           if (gameState === 'MENU' || gameState === 'ATTRACT' || gameState === 'LOBBY') {
             setState('LOBBY');
           }
-          
+
           updateLobbyUI();
-          
+
           conn.send({ type: 'welcome' });
+
+          // Si se une o reconecta durante una partida activa, ponerlo al día:
+          if (inActiveGame) {
+            if (gameState === 'PLAYING' && !existingPlayer.answered) {
+              const qp = currentQuestionPayload();
+              if (qp) conn.send(qp);
+            }
+            updateAnswersReceivedCounter();
+          }
           break;
+        }
 
         case 'answer':
           if (gameState === 'PLAYING') {
@@ -2773,7 +3083,8 @@
           }, 30000);
           break;
       }
-      
+
+      updateIngameQR();
       resetInactivityTimer();
     }
 
@@ -3374,6 +3685,9 @@
       document.getElementById('cfg-color-primary').value = config.colorPrimary;
       document.getElementById('cfg-color-accent').value = config.colorAccent;
       document.getElementById('cfg-color-bg').value = config.colorBg;
+      document.getElementById('cfg-color-btn').value = config.colorButton || config.colorPrimary || '#da291c';
+      document.getElementById('cfg-color-btn-text').value = config.colorButtonText || '#ffffff';
+      document.getElementById('cfg-color-text').value = config.colorText || '#ffffff';
       document.getElementById('cfg-inactivity').value = config.inactivityTimeout;
       document.getElementById('cfg-time-easy').value = config.facil.timeLimitPerQuestion;
       document.getElementById('cfg-mult-easy').value = config.facil.pointsMultiplier;
@@ -3544,8 +3858,11 @@
       config.subtitle = document.getElementById('cfg-subtitle').value;
       config.adminPassword = document.getElementById('cfg-password').value;
       config.colorPrimary = document.getElementById('cfg-color-primary').value;
-      config.colorAccent = document.getElementById('cfg-color-accent').value;
       config.colorBg = document.getElementById('cfg-color-bg').value;
+      config.colorButton = document.getElementById('cfg-color-btn').value;
+      config.colorButtonText = document.getElementById('cfg-color-btn-text').value;
+      config.colorText = document.getElementById('cfg-color-text').value;
+      config.colorAccent = config.colorText; // el detalle sigue al color de la letra
       config.inactivityTimeout = parseInt(document.getElementById('cfg-inactivity').value) || 45;
       
       config.facil.timeLimitPerQuestion = parseInt(document.getElementById('cfg-time-easy').value) || 20;

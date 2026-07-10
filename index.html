@@ -2612,19 +2612,21 @@
 
       const qrcodeContainer = document.getElementById('qrcode');
       qrcodeContainer.innerHTML = '';
+      // El QR SIEMPRE debe ser oscuro sobre claro para poder escanearse.
+      // (Antes usaba config.colorPrimary; si el primario era blanco, el QR salía invisible.)
       try {
         if (typeof QRCode !== 'undefined') {
           new QRCode(qrcodeContainer, {
             text: mobileUrl,
             width: 200,
             height: 200,
-            colorDark: config.colorPrimary || "#da291c",
+            colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
           });
         } else {
           const qrImg = document.createElement('img');
-          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=${(config.colorPrimary || '#da291c').replace('#','')}&data=${encodeURIComponent(mobileUrl)}`;
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${encodeURIComponent(mobileUrl)}`;
           qrImg.style.width = "200px";
           qrImg.style.height = "200px";
           qrcodeContainer.appendChild(qrImg);
@@ -2633,7 +2635,7 @@
         console.error("QR generation failed, trying API fallback", e);
         qrcodeContainer.innerHTML = '';
         const qrImg = document.createElement('img');
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=${(config.colorPrimary || '#da291c').replace('#','')}&data=${encodeURIComponent(mobileUrl)}`;
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${encodeURIComponent(mobileUrl)}`;
         qrImg.style.width = "200px";
         qrImg.style.height = "200px";
         qrcodeContainer.appendChild(qrImg);
@@ -2731,7 +2733,7 @@
         if (kioskHeartbeat) clearInterval(kioskHeartbeat);
         kioskHeartbeat = setInterval(() => {
           if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'ping' }));
-        }, 25000);
+        }, 15000);
       };
 
       ws.onmessage = (ev) => {
@@ -2806,15 +2808,15 @@
 
           let existingPlayer = players.find(p => p.id === conn.peer);
 
-          // Reconexión a mitad de partida: si el peer es nuevo pero ya existe un jugador
-          // con el mismo nombre que se había desconectado, se le vuelve a enlazar
-          // conservando su puntaje.
-          if (!existingPlayer && inActiveGame) {
-            existingPlayer = players.find(p => p.name === name && (!p.connection || !p.connection.open));
+          // Reconexión / re-registro: si el peer es nuevo pero ya existe un jugador con el
+          // mismo nombre, se le vuelve a enlazar (conserva su puntaje y evita duplicados en
+          // la lista, tanto en el lobby como a mitad de partida).
+          if (!existingPlayer) {
+            existingPlayer = players.find(p => p.name === name);
             if (existingPlayer) {
               existingPlayer.id = conn.peer;
               existingPlayer.connection = conn;
-              console.log('Jugador reconectado:', name);
+              console.log('Jugador reconectado/re-enlazado:', name);
             }
           }
 
@@ -2977,6 +2979,7 @@
         case 'ATTRACT':
           document.getElementById('screen-attract').classList.add('active');
           stopMusic();
+          broadcastToPlayers({ type: 'session_ended' }); // avisa a los celulares que NO reintenten
           players.forEach(p => {
             if (p.connection) p.connection.close();
           });
@@ -2987,6 +2990,7 @@
           document.getElementById('screen-menu').classList.add('active');
           startMusic('menu');
           activePlayerName = 'Kiosco';
+          broadcastToPlayers({ type: 'session_ended' }); // avisa a los celulares que NO reintenten
           players.forEach(p => {
             if (p.connection) p.connection.close();
           });
@@ -3953,7 +3957,10 @@
     // 12. MOBILE VIEWPORT CONTROLLER LOGIC
     // ==========================================
     let mobileRoomId = '';
-    
+    let mobilePlayerName = '';
+    let mobileRetryCount = 0;
+    let mobileReconnectTimer = null;
+
     function initMobileController() {
       const urlParams = new URLSearchParams(window.location.search);
       mobileRoomId = urlParams.get('room');
@@ -3972,41 +3979,50 @@
       if (gpTitleEl) gpTitleEl.innerText = (config.title || 'Trivia Live').toUpperCase();
     }
 
+    function setMobileStatus(txt) {
+      const ind = document.getElementById('mobile-q-indicator');
+      if (ind) ind.innerText = txt;
+    }
+
     function joinMobileLobby() {
       const nameInput = document.getElementById('mobile-name-input');
       const name = nameInput.value.trim().toUpperCase();
-      
+
       if (name.length === 0) {
         alert("Por favor ingresa tu nombre para conectarte.");
         return;
       }
 
+      mobilePlayerName = name;
+      mobileRetryCount = 0;
       document.getElementById('mobile-login-btn').innerText = "Conectando...";
       document.getElementById('mobile-login-btn').disabled = true;
 
-      let terminal = false;   // evita alerts dobles al cerrar
-      let joined = false;
+      connectMobile();
+    }
 
-      let mobileConnectTimeout = setTimeout(() => {
-        terminal = true;
-        alert("No se pudo conectar despu\u00e9s de 20 segundos.\n\nRevisa tu conexi\u00f3n a internet (WiFi o datos) e intenta de nuevo.");
-        location.reload();
-      }, 20000);
+    // Conexi\u00f3n con auto-reconexi\u00f3n: si se cae la red o la pantalla parpadea,
+    // el celular reintenta solo (sin expulsar al usuario ni recargar).
+    function connectMobile() {
+      let terminal = false;   // true = fin real (gameover / sesi\u00f3n cerrada): no reconectar
+      let hb = null;
 
       let ws;
       try {
         ws = new WebSocket(RELAY_URL);
       } catch(e) {
-        clearTimeout(mobileConnectTimeout);
-        alert("No se pudo iniciar la conexi\u00f3n. Revisa tu internet e intenta de nuevo.");
-        location.reload();
+        scheduleMobileReconnect();
         return;
       }
       mobileSocket = ws;
 
-      let mobileHeartbeat = setInterval(() => {
+      // Si no logra conectar/unirse en 12s, cierra y deja que onclose reintente
+      let attemptTimeout = setTimeout(() => { try { ws.close(); } catch(e){} }, 12000);
+
+      hb = setInterval(() => {
         if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'ping' }));
-      }, 25000);
+      }, 15000);
+
       ws.onopen = () => {
         ws.send(JSON.stringify({ t: 'join', room: mobileRoomId }));
       };
@@ -4017,53 +4033,68 @@
         if (!m) return;
 
         if (m.t === 'joined') {
-          joined = true;
-          clearTimeout(mobileConnectTimeout);
+          mobileRetryCount = 0;
+          clearTimeout(attemptTimeout);
           mobileConn = {
             open: true,
             send(obj) { if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'to_host', d: obj })); }
           };
-          mobileConn.send({ type: 'register', name: name });
+          mobileConn.send({ type: 'register', name: mobilePlayerName });
 
         } else if (m.t === 'from_host') {
-          if (m.d && (m.d.type === 'rejected' || m.d.type === 'restart' || m.d.type === 'menu')) {
-            terminal = true; // estos casos recargan la pagina desde el handler
+          if (m.d && (m.d.type === 'gameover' || m.d.type === 'session_ended')) {
+            terminal = true; // fin normal de la partida/sesi\u00f3n: ya no reconectar
           }
           handleKioskMobileData(m.d);
 
         } else if (m.t === 'err') {
-          terminal = true;
-          clearTimeout(mobileConnectTimeout);
+          clearTimeout(attemptTimeout);
           if (m.code === 'no_room') {
-            alert("La sala " + mobileRoomId.replace('CLARO-','') + " no est\u00e1 activa.\n\nMira la pantalla gigante: toca 'Jugar con Celular' para abrir la sala y escanea el QR que se muestra AHORA.");
+            // La pantalla a\u00fan no abri\u00f3 la sala (o se est\u00e1 reconectando): esperar y reintentar
+            setMobileStatus("Esperando a que la pantalla abra la sala\u2026");
+            try { ws.close(); } catch(e){}  // dispara onclose -> reconexi\u00f3n
           } else {
+            terminal = true;
             alert("Error de conexi\u00f3n (" + m.code + "). Intenta de nuevo.");
+            location.reload();
           }
-          location.reload();
 
         } else if (m.t === 'host_gone') {
-          terminal = true;
-          alert("La pantalla cerr\u00f3 la partida.");
-          location.reload();
+          // La pantalla se cay\u00f3 un momento; el relay nos cerrar\u00e1 y reconectaremos solos
+          setMobileStatus("Reconectando con la pantalla\u2026");
         }
       };
 
       ws.onclose = () => {
-        clearTimeout(mobileConnectTimeout);
-        clearInterval(mobileHeartbeat);
-        if (!terminal) {
-          if (joined) {
-            alert("Conexi\u00f3n finalizada con la pantalla.");
-          } else {
-            alert("No se pudo conectar al servicio de juego.\n\nRevisa tu internet e intenta de nuevo.");
-          }
-          location.reload();
-        }
+        clearTimeout(attemptTimeout);
+        if (hb) clearInterval(hb);
+        if (terminal) return;
+        scheduleMobileReconnect();
       };
 
-      ws.onerror = (err) => {
-        console.error("WebSocket movil error:", err);
-      };
+      ws.onerror = () => {};
+    }
+
+    function scheduleMobileReconnect() {
+      if (mobileReconnectTimer) return; // ya hay un reintento agendado
+      mobileRetryCount++;
+
+      // Muestra el estado del reintento en la pantalla que est\u00e9 visible
+      const login = document.getElementById('mobile-login-screen');
+      const waiting = document.getElementById('mobile-waiting-screen');
+      const gamepad = document.getElementById('mobile-gamepad-screen');
+      const loginBtn = document.getElementById('mobile-login-btn');
+      if (login && !login.classList.contains('hidden') && loginBtn) {
+        loginBtn.innerText = "Conectando\u2026 (" + mobileRetryCount + ")";
+      }
+      if (waiting && !waiting.classList.contains('hidden')) setMobileStatus("Reconectando\u2026 (intento " + mobileRetryCount + ")");
+      else if (gamepad && !gamepad.classList.contains('hidden')) setMobileStatus("Reconectando\u2026 (intento " + mobileRetryCount + ")");
+
+      const delay = Math.min(1000 + mobileRetryCount * 400, 5000); // backoff hasta 5s
+      mobileReconnectTimer = setTimeout(() => {
+        mobileReconnectTimer = null;
+        connectMobile();
+      }, delay);
     }
 
     function handleKioskMobileData(data) {
@@ -4152,6 +4183,12 @@
 
         case 'menu':
           location.reload();
+          break;
+
+        case 'session_ended':
+          // La pantalla cerró la sesión (volvió al menú). No reconectar; volver al inicio.
+          setMobileStatus("La sesión terminó. ¡Gracias por participar!");
+          setTimeout(() => location.reload(), 1500);
           break;
       }
     }

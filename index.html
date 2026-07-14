@@ -1882,164 +1882,9 @@
     /* BAKEABLE CONFIGURATION PATTERN */
   </script>
   <script type="application/json" id="bakedConfig">
-{
-  "baked": true,
-  "config": {
-    "title": "Trivia",
-    "subtitle": "Pon a prueba tus conocimientos",
-    "adminPassword": "147",
-    "colorPrimary": "#ffffff",
-    "colorAccent": "#ffffff",
-    "colorBg": "#0b0b0b",
-    "inactivityTimeout": 45,
-    "showRankingAtEnd": true,
-    "facil": {
-      "timeLimitPerQuestion": 20,
-      "pointsMultiplier": 1
-    },
-    "dificil": {
-      "timeLimitPerQuestion": 10,
-      "pointsMultiplier": 2
-    },
-    "questions": [
-      {
-        "text": "¿Cuál es el margen de ganancia garantizado para el tendero al vender Nutrión? ",
-        "options": [
-          "10%",
-          "20%",
-          "15%",
-          "25%"
-        ],
-        "correctIndex": 1,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "¿Qué fecha oficial marca el inicio de ventas de Nutrión en el Eje Cafetero?",
-        "options": [
-          "1 de Julio",
-          "30 de Julio",
-          "15 de Julio",
-          "17 de Marzo"
-        ],
-        "correctIndex": 2,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "En la categoría de perros en el Eje Cafetero, ¿cuál es el tamaño de SKU que representa la mayor porción del mercado con un 27%?",
-        "options": [
-          "GR 500",
-          "GR 1000",
-          "GR 800",
-          "GR 2000"
-        ],
-        "correctIndex": 2,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "¿Cuáles son las fuentes de proteína animal de alta calidad utilizadas en la fórmula de Nutrión Perros y Gatos?",
-        "options": [
-          "Pollo y Pescado",
-          "Carne y Cerdo",
-          "Pollo y Carne",
-          "Solo Carne"
-        ],
-        "correctIndex": 2,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "¿Cuál es el precio de venta sugerido al público para la presentación de Nutrión Perros de 500g?",
-        "options": [
-          "$3.500",
-          "$3.400",
-          "$5.300",
-          "$2.590"
-        ],
-        "correctIndex": 1,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "¿Nutrión Gatos Adultos es un alimento balanceado que cuenta con control de PH urinario?",
-        "options": [
-          "SI",
-          "NO",
-          "TODAS LAS ANTERIORES",
-          "NINGURA"
-        ],
-        "correctIndex": 0,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "Según el análisis de mercado del Eje Cafetero, ¿cuál es la marca líder absoluta en el segmento de Gatos con un 39% de participación a Junio 25?",
-        "options": [
-          "Whiskas",
-          "Mirringo",
-          "Donkat",
-          "Oh mai gat"
-        ],
-        "correctIndex": 2,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "¿Qué producto de la línea de snacks se ofrece bajo el sabor a salchicha y en presentación de 50g?",
-        "options": [
-          "Trocitos Nutrión",
-          "Nutrión Trocitos",
-          "Nu-Trocitos",
-          "Nutrión Snacks"
-        ],
-        "correctIndex": 2,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "¿Cuál es el precio de venta sugerido al público para la presentación de Nutrión Gatos de 500g?",
-        "options": [
-          "$5.47",
-          "$5.300",
-          " $5.000",
-          "$6.300"
-        ],
-        "correctIndex": 1,
-        "points": 100,
-        "penalty": 20
-      },
-      {
-        "text": "¿Cuál es el beneficio clave que se le debe argumentar al tendero si manifiesta la objeción: \"No tengo espacio\"?",
-        "options": [
-          "Que el producto viene en bultos grandes de 15 Kg.",
-          "Que se puede colgar del techo de la tienda.",
-          "Que las presentaciones son de 500g y 1000g, fáciles de acomodar y de alta rotación",
-          "Que no necesita exhibirse en estantería."
-        ],
-        "correctIndex": 2,
-        "points": 100,
-        "penalty": 20
-      }
-    ],
-    "colorButton": "#fcc410",
-    "colorButtonText": "#ffffff",
-    "colorText": "#ffffff",
-    "showQuestionsOnMobile": true
-  },
-  "assets": {
-    "logo": null,
-    "bgMenu": null,
-    "bgGameplay": null,
-    "musicMenu": null,
-    "musicGameplay": null,
-    "sfxCorrect": null,
-    "sfxIncorrect": null,
-    "sfxCountdown": null,
-    "sfxGameOver": null
+  {
+    "baked": false
   }
-}
   </script>
 
   <script>
@@ -2147,6 +1992,14 @@
     // Game state tracking variables
     let gameState = 'ATTRACT'; // ATTRACT | MENU | LOBBY | COUNTDOWN | PLAYING | PAUSED | GAMEOVER | RANKING_INPUT | RANKING
     let appMode = 'kiosk'; // kiosk | mobile
+
+    // Detecta si el dispositivo que abre la página es un celular/tablet
+    function isMobileDevice() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+      const uaMatch = /android|iphone|ipad|ipod|windows phone|mobile/i.test(ua);
+      const touchSmallScreen = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && Math.min(window.innerWidth, window.innerHeight) <= 820;
+      return uaMatch || touchSmallScreen;
+    }
     let playInputSource = 'touch'; // touch | mobile
     let difficultyMode = 'facil'; // facil | dificil
     let adminAuthorized = false;
@@ -2202,13 +2055,11 @@
         const store = transaction.objectStore(STORE_NAME);
         
         for (const key of Object.keys(customAssets)) {
-          const val = await new Promise((resolve) => {
+          customAssets[key] = await new Promise((resolve) => {
             const req = store.get(key);
             req.onsuccess = () => resolve(req.result || null);
             req.onerror = () => resolve(null);
           });
-          // Solo sobreescribe si esta máquina tiene el asset guardado (no borra los horneados)
-          if (val !== null) customAssets[key] = val;
         }
         applyCustomAssets();
       } catch (err) {
@@ -2436,51 +2287,40 @@
     // 4. CONFIG MANAGEMENT (LOAD / APPLY / RESTORE)
     // ==========================================
     function loadConfig() {
-      // 1. Config horneada en el <script> = valores por defecto publicados
-      let bakedConfig = null, bakedAssets = null;
+      // 1. Check for baked config in the script tag
       const bakedElement = document.getElementById('bakedConfig');
       if (bakedElement) {
         try {
           const baked = JSON.parse(bakedElement.textContent);
           if (baked && baked.baked) {
-            console.log("Config horneada encontrada (valores por defecto).");
-            bakedConfig = baked.config || null;
-            bakedAssets = baked.assets || null;
+            console.log("Loading baked configuration data.");
+            config = baked.config;
+            customAssets = baked.assets;
+            applyCustomAssets();
+            return;
           }
         } catch(e) {
           console.error("Failed parsing baked config:", e);
         }
       }
 
-      // 2. Config: las ediciones locales (localStorage) tienen prioridad sobre lo horneado
+      // 2. Check localStorage config
       try {
         const savedConfig = localStorage.getItem('claro_trivia_config');
         if (savedConfig) {
           config = JSON.parse(savedConfig);
-        } else if (bakedConfig) {
-          config = bakedConfig;
         } else {
           config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
         }
       } catch(e) {
         console.error("Local storage read failure, defaulting.", e);
-        config = bakedConfig || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       }
 
-      // 3. Assets: arranca desde los horneados; lo guardado en esta máquina (IndexedDB) los sobreescribe
-      if (bakedAssets) {
-        for (const key of Object.keys(customAssets)) {
-          if (bakedAssets[key] !== undefined && bakedAssets[key] !== null) {
-            customAssets[key] = bakedAssets[key];
-          }
-        }
-      }
-      applyCustomAssets();
-
-      // 4. Assets locales (IndexedDB) sobreescriben lo horneado en la máquina de la pantalla
+      // 3. Check IndexedDB assets
       loadAssetsFromDB();
-
-      // 5. Load ranking
+      
+      // 4. Load ranking
       loadRanking();
     }
 
@@ -2612,21 +2452,19 @@
 
       const qrcodeContainer = document.getElementById('qrcode');
       qrcodeContainer.innerHTML = '';
-      // El QR SIEMPRE debe ser oscuro sobre claro para poder escanearse.
-      // (Antes usaba config.colorPrimary; si el primario era blanco, el QR salía invisible.)
       try {
         if (typeof QRCode !== 'undefined') {
           new QRCode(qrcodeContainer, {
             text: mobileUrl,
             width: 200,
             height: 200,
-            colorDark: "#000000",
+            colorDark: config.colorPrimary || "#da291c",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
           });
         } else {
           const qrImg = document.createElement('img');
-          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${encodeURIComponent(mobileUrl)}`;
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=${(config.colorPrimary || '#da291c').replace('#','')}&data=${encodeURIComponent(mobileUrl)}`;
           qrImg.style.width = "200px";
           qrImg.style.height = "200px";
           qrcodeContainer.appendChild(qrImg);
@@ -2635,7 +2473,7 @@
         console.error("QR generation failed, trying API fallback", e);
         qrcodeContainer.innerHTML = '';
         const qrImg = document.createElement('img');
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${encodeURIComponent(mobileUrl)}`;
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=${(config.colorPrimary || '#da291c').replace('#','')}&data=${encodeURIComponent(mobileUrl)}`;
         qrImg.style.width = "200px";
         qrImg.style.height = "200px";
         qrcodeContainer.appendChild(qrImg);
@@ -2733,7 +2571,7 @@
         if (kioskHeartbeat) clearInterval(kioskHeartbeat);
         kioskHeartbeat = setInterval(() => {
           if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'ping' }));
-        }, 15000);
+        }, 25000);
       };
 
       ws.onmessage = (ev) => {
@@ -2808,15 +2646,15 @@
 
           let existingPlayer = players.find(p => p.id === conn.peer);
 
-          // Reconexión / re-registro: si el peer es nuevo pero ya existe un jugador con el
-          // mismo nombre, se le vuelve a enlazar (conserva su puntaje y evita duplicados en
-          // la lista, tanto en el lobby como a mitad de partida).
-          if (!existingPlayer) {
-            existingPlayer = players.find(p => p.name === name);
+          // Reconexión a mitad de partida: si el peer es nuevo pero ya existe un jugador
+          // con el mismo nombre que se había desconectado, se le vuelve a enlazar
+          // conservando su puntaje.
+          if (!existingPlayer && inActiveGame) {
+            existingPlayer = players.find(p => p.name === name && (!p.connection || !p.connection.open));
             if (existingPlayer) {
               existingPlayer.id = conn.peer;
               existingPlayer.connection = conn;
-              console.log('Jugador reconectado/re-enlazado:', name);
+              console.log('Jugador reconectado:', name);
             }
           }
 
@@ -2979,7 +2817,6 @@
         case 'ATTRACT':
           document.getElementById('screen-attract').classList.add('active');
           stopMusic();
-          broadcastToPlayers({ type: 'session_ended' }); // avisa a los celulares que NO reintenten
           players.forEach(p => {
             if (p.connection) p.connection.close();
           });
@@ -2990,7 +2827,6 @@
           document.getElementById('screen-menu').classList.add('active');
           startMusic('menu');
           activePlayerName = 'Kiosco';
-          broadcastToPlayers({ type: 'session_ended' }); // avisa a los celulares que NO reintenten
           players.forEach(p => {
             if (p.connection) p.connection.close();
           });
@@ -3957,10 +3793,7 @@
     // 12. MOBILE VIEWPORT CONTROLLER LOGIC
     // ==========================================
     let mobileRoomId = '';
-    let mobilePlayerName = '';
-    let mobileRetryCount = 0;
-    let mobileReconnectTimer = null;
-
+    
     function initMobileController() {
       const urlParams = new URLSearchParams(window.location.search);
       mobileRoomId = urlParams.get('room');
@@ -3979,50 +3812,41 @@
       if (gpTitleEl) gpTitleEl.innerText = (config.title || 'Trivia Live').toUpperCase();
     }
 
-    function setMobileStatus(txt) {
-      const ind = document.getElementById('mobile-q-indicator');
-      if (ind) ind.innerText = txt;
-    }
-
     function joinMobileLobby() {
       const nameInput = document.getElementById('mobile-name-input');
       const name = nameInput.value.trim().toUpperCase();
-
+      
       if (name.length === 0) {
         alert("Por favor ingresa tu nombre para conectarte.");
         return;
       }
 
-      mobilePlayerName = name;
-      mobileRetryCount = 0;
       document.getElementById('mobile-login-btn').innerText = "Conectando...";
       document.getElementById('mobile-login-btn').disabled = true;
 
-      connectMobile();
-    }
+      let terminal = false;   // evita alerts dobles al cerrar
+      let joined = false;
 
-    // Conexi\u00f3n con auto-reconexi\u00f3n: si se cae la red o la pantalla parpadea,
-    // el celular reintenta solo (sin expulsar al usuario ni recargar).
-    function connectMobile() {
-      let terminal = false;   // true = fin real (gameover / sesi\u00f3n cerrada): no reconectar
-      let hb = null;
+      let mobileConnectTimeout = setTimeout(() => {
+        terminal = true;
+        alert("No se pudo conectar despu\u00e9s de 20 segundos.\n\nRevisa tu conexi\u00f3n a internet (WiFi o datos) e intenta de nuevo.");
+        location.reload();
+      }, 20000);
 
       let ws;
       try {
         ws = new WebSocket(RELAY_URL);
       } catch(e) {
-        scheduleMobileReconnect();
+        clearTimeout(mobileConnectTimeout);
+        alert("No se pudo iniciar la conexi\u00f3n. Revisa tu internet e intenta de nuevo.");
+        location.reload();
         return;
       }
       mobileSocket = ws;
 
-      // Si no logra conectar/unirse en 12s, cierra y deja que onclose reintente
-      let attemptTimeout = setTimeout(() => { try { ws.close(); } catch(e){} }, 12000);
-
-      hb = setInterval(() => {
+      let mobileHeartbeat = setInterval(() => {
         if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'ping' }));
-      }, 15000);
-
+      }, 25000);
       ws.onopen = () => {
         ws.send(JSON.stringify({ t: 'join', room: mobileRoomId }));
       };
@@ -4033,68 +3857,53 @@
         if (!m) return;
 
         if (m.t === 'joined') {
-          mobileRetryCount = 0;
-          clearTimeout(attemptTimeout);
+          joined = true;
+          clearTimeout(mobileConnectTimeout);
           mobileConn = {
             open: true,
             send(obj) { if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'to_host', d: obj })); }
           };
-          mobileConn.send({ type: 'register', name: mobilePlayerName });
+          mobileConn.send({ type: 'register', name: name });
 
         } else if (m.t === 'from_host') {
-          if (m.d && (m.d.type === 'gameover' || m.d.type === 'session_ended')) {
-            terminal = true; // fin normal de la partida/sesi\u00f3n: ya no reconectar
+          if (m.d && (m.d.type === 'rejected' || m.d.type === 'restart' || m.d.type === 'menu')) {
+            terminal = true; // estos casos recargan la pagina desde el handler
           }
           handleKioskMobileData(m.d);
 
         } else if (m.t === 'err') {
-          clearTimeout(attemptTimeout);
+          terminal = true;
+          clearTimeout(mobileConnectTimeout);
           if (m.code === 'no_room') {
-            // La pantalla a\u00fan no abri\u00f3 la sala (o se est\u00e1 reconectando): esperar y reintentar
-            setMobileStatus("Esperando a que la pantalla abra la sala\u2026");
-            try { ws.close(); } catch(e){}  // dispara onclose -> reconexi\u00f3n
+            alert("La sala " + mobileRoomId.replace('CLARO-','') + " no est\u00e1 activa.\n\nMira la pantalla gigante: toca 'Jugar con Celular' para abrir la sala y escanea el QR que se muestra AHORA.");
           } else {
-            terminal = true;
             alert("Error de conexi\u00f3n (" + m.code + "). Intenta de nuevo.");
-            location.reload();
           }
+          location.reload();
 
         } else if (m.t === 'host_gone') {
-          // La pantalla se cay\u00f3 un momento; el relay nos cerrar\u00e1 y reconectaremos solos
-          setMobileStatus("Reconectando con la pantalla\u2026");
+          terminal = true;
+          alert("La pantalla cerr\u00f3 la partida.");
+          location.reload();
         }
       };
 
       ws.onclose = () => {
-        clearTimeout(attemptTimeout);
-        if (hb) clearInterval(hb);
-        if (terminal) return;
-        scheduleMobileReconnect();
+        clearTimeout(mobileConnectTimeout);
+        clearInterval(mobileHeartbeat);
+        if (!terminal) {
+          if (joined) {
+            alert("Conexi\u00f3n finalizada con la pantalla.");
+          } else {
+            alert("No se pudo conectar al servicio de juego.\n\nRevisa tu internet e intenta de nuevo.");
+          }
+          location.reload();
+        }
       };
 
-      ws.onerror = () => {};
-    }
-
-    function scheduleMobileReconnect() {
-      if (mobileReconnectTimer) return; // ya hay un reintento agendado
-      mobileRetryCount++;
-
-      // Muestra el estado del reintento en la pantalla que est\u00e9 visible
-      const login = document.getElementById('mobile-login-screen');
-      const waiting = document.getElementById('mobile-waiting-screen');
-      const gamepad = document.getElementById('mobile-gamepad-screen');
-      const loginBtn = document.getElementById('mobile-login-btn');
-      if (login && !login.classList.contains('hidden') && loginBtn) {
-        loginBtn.innerText = "Conectando\u2026 (" + mobileRetryCount + ")";
-      }
-      if (waiting && !waiting.classList.contains('hidden')) setMobileStatus("Reconectando\u2026 (intento " + mobileRetryCount + ")");
-      else if (gamepad && !gamepad.classList.contains('hidden')) setMobileStatus("Reconectando\u2026 (intento " + mobileRetryCount + ")");
-
-      const delay = Math.min(1000 + mobileRetryCount * 400, 5000); // backoff hasta 5s
-      mobileReconnectTimer = setTimeout(() => {
-        mobileReconnectTimer = null;
-        connectMobile();
-      }, delay);
+      ws.onerror = (err) => {
+        console.error("WebSocket movil error:", err);
+      };
     }
 
     function handleKioskMobileData(data) {
@@ -4184,12 +3993,6 @@
         case 'menu':
           location.reload();
           break;
-
-        case 'session_ended':
-          // La pantalla cerró la sesión (volvió al menú). No reconectar; volver al inicio.
-          setMobileStatus("La sesión terminó. ¡Gracias por participar!");
-          setTimeout(() => location.reload(), 1500);
-          break;
       }
     }
 
@@ -4269,7 +4072,11 @@
         appMode = 'kiosk';
         document.getElementById('mobile-container').classList.add('hidden');
         document.getElementById('game-container').classList.remove('hidden');
-        
+
+        if (isMobileDevice()) {
+          alert('Este juego se puede jugar desde tu celular, pero el panel principal (la pantalla con las preguntas) debe abrirse en un computador.\n\nAbre este enlace en un computador y, desde ahí, toca "Jugar con Celular" para generar el código de sala y unirte con tu celular.');
+        }
+
         loadConfig();
         applyKioskSecurity();
         setupInactivityListeners();
